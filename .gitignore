@@ -2,6 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
+data/Euroc
+
+
+
 
 # C extensions
 *.so
@@ -170,3 +174,13 @@ fabric.properties
 
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
+data/Euroc/MH_01_easy.zip.baiduyun.p.downloading
+data/Euroc/MH_02_easy/mav0/cam0/data/1403636858651666432.png
+lists/temp_train.txt
+.gitignore
+.gitignore
+.gitignore
+.gitignore
+.gitignore
+.DS_Store
+result/logs/events.out.tfevents.1691554878.Cans-MacBook-Pro.local

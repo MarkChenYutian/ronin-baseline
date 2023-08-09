@@ -5,7 +5,7 @@ from os import path as osp
 import numpy as np
 import torch
 import json
-
+import sys
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from tensorboardX import SummaryWriter
@@ -16,7 +16,7 @@ from transformations import *
 from metric import compute_ate_rte
 from model_resnet1d import *
 
-_input_channel, _output_channel = 6, 2
+_input_channel, _output_channel = 6, 3
 _fc_config = {'fc_dim': 512, 'in_dim': 7, 'dropout': 0.5, 'trans_planes': 128}
 
 
@@ -80,6 +80,9 @@ def get_dataset(root_dir, data_list, args, **kwargs):
     elif args.dataset == 'ridi':
         from data_ridi import RIDIGlobSpeedSequence
         seq_type = RIDIGlobSpeedSequence
+    elif args.dataset == 'euroc':
+        from data_euroc import EurocSequence
+        seq_type = EurocSequence
     dataset = StridedSequenceDataset(
         seq_type, root_dir, data_list, args.cache_path, args.step_size, args.window_size,
         random_shift=random_shift, transform=transforms,
@@ -252,9 +255,9 @@ def recon_traj_with_preds(dataset, preds, seq_id=0, **kwargs):
     ts = dataset.ts[seq_id]
     ind = np.array([i[1] for i in dataset.index_map if i[0] == seq_id], dtype=np.int)
     dts = np.mean(ts[ind[1:]] - ts[ind[:-1]])
-    pos = np.zeros([preds.shape[0] + 2, 2])
-    pos[0] = dataset.gt_pos[seq_id][0, :2]
-    pos[1:-1] = np.cumsum(preds[:, :2] * dts, axis=0) + pos[0]
+    pos = np.zeros([preds.shape[0] + 2, 3])
+    pos[0] = dataset.gt_pos[seq_id][0, :3]
+    pos[1:-1] = np.cumsum(preds[:, :3] * dts, axis=0) + pos[0]
     pos[-1] = pos[-2]
     ts_ext = np.concatenate([[ts[0] - 1e-06], ts[ind], [ts[-1] + 1e-06]], axis=0)
     pos = interp1d(ts_ext, pos, axis=0)(ts)
@@ -312,8 +315,8 @@ def test_sequence(args):
         targets_seq.append(targets)
         losses_seq.append(losses)
 
-        pos_pred = recon_traj_with_preds(seq_dataset, preds)[:, :2]
-        pos_gt = seq_dataset.gt_pos[0][:, :2]
+        pos_pred = recon_traj_with_preds(seq_dataset, preds)[:, :3]
+        pos_gt = seq_dataset.gt_pos[0][:, :3]
 
         traj_lens.append(np.sum(np.linalg.norm(pos_gt[1:] - pos_gt[:-1], axis=1)))
         ate, rte = compute_ate_rte(pos_pred, pos_gt, pred_per_min)
@@ -353,7 +356,7 @@ def test_sequence(args):
 
         if args.out_dir is not None and osp.isdir(args.out_dir):
             np.save(osp.join(args.out_dir, data + '_gsn.npy'),
-                    np.concatenate([pos_pred[:, :2], pos_gt[:, :2]], axis=1))
+                    np.concatenate([pos_pred[:, :3], pos_gt[:, :3]], axis=1))
             plt.savefig(osp.join(args.out_dir, data + '_gsn.png'))
 
         plt.close('all')
@@ -388,20 +391,20 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_list', type=str)
+    parser.add_argument('--train_list', type=str,default = "/Users/can/ronin/lists/temp_train.txt")
     parser.add_argument('--val_list', type=str, default=None)
     parser.add_argument('--test_list', type=str, default=None)
     parser.add_argument('--test_path', type=str, default=None)
-    parser.add_argument('--root_dir', type=str, default=None, help='Path to data directory')
+    parser.add_argument('--root_dir', type=str, default='/Users/can/ronin/data/Euroc', help='/Users/can/ronin/data/Euroc')
     parser.add_argument('--cache_path', type=str, default=None, help='Path to cache folder to store processed data')
-    parser.add_argument('--dataset', type=str, default='ronin', choices=['ronin', 'ridi'])
+    parser.add_argument('--dataset', type=str, default='euroc', choices=['ronin', 'ridi','euroc'])
     parser.add_argument('--max_ori_error', type=float, default=20.0)
     parser.add_argument('--step_size', type=int, default=10)
     parser.add_argument('--window_size', type=int, default=200)
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'])
     parser.add_argument('--lr', type=float, default=1e-04)
     parser.add_argument('--batch_size', type=int, default=128)
-    parser.add_argument('--epochs', type=int, default=10000)
+    parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--arch', type=str, default='resnet18')
     parser.add_argument('--cpu', action='store_true')
     parser.add_argument('--run_ekf', action='store_true')
@@ -409,7 +412,7 @@ if __name__ == '__main__':
     parser.add_argument('--show_plot', action='store_true')
 
     parser.add_argument('--continue_from', type=str, default=None)
-    parser.add_argument('--out_dir', type=str, default=None)
+    parser.add_argument('--out_dir', type=str, default= '/Users/can/ronin/result')
     parser.add_argument('--model_path', type=str, default=None)
     parser.add_argument('--feature_sigma', type=float, default=0.00001)
     parser.add_argument('--target_sigma', type=float, default=0.00001)
