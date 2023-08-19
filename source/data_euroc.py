@@ -58,8 +58,11 @@ class EurocSequence(CompiledSequence):
         ##if global
         ori = pp.SO3(self.info['gt_orientation']).double()
         nz = np.zeros(ts.shape).reshape((-1,1))
-        gyro_glob = (ori * pp.SO3(np.concatenate([nz, self.info['gyro']], axis=1)).double()).translation().numpy()
-        acce_glob = (ori * pp.SO3(np.concatenate([nz, self.info['acc']], axis=1)).double()).translation().numpy()
+        gyro_glob = self.info['gyro']
+        acce_glob = self.info['acc']
+        
+        #gyro_glob = (ori * pp.SO3(np.concatenate([nz, self.info['gyro']], axis=1)).double()).translation().numpy()
+        #acce_glob = (ori * pp.SO3(np.concatenate([nz, self.info['acc']], axis=1)).double()).translation().numpy()
 
 
         gt_pos =  self.info["gt_translation"]

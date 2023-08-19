@@ -5,7 +5,7 @@ from os import path as osp
 import numpy as np
 import torch
 import json
-import sys
+
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from tensorboardX import SummaryWriter
@@ -253,7 +253,7 @@ def recon_traj_with_preds(dataset, preds, seq_id=0, **kwargs):
     Reconstruct trajectory with predicted global velocities.
     """
     ts = dataset.ts[seq_id]
-    ind = np.array([i[1] for i in dataset.index_map if i[0] == seq_id], dtype=np.int)
+    ind = np.array([i[1] for i in dataset.index_map if i[0] == seq_id], dtype=int)
     dts = np.mean(ts[ind[1:]] - ts[ind[:-1]])
     pos = np.zeros([preds.shape[0] + 2, 3])
     pos[0] = dataset.gt_pos[seq_id][0, :3]
@@ -307,7 +307,7 @@ def test_sequence(args):
     for data in test_data_list:
         seq_dataset = get_dataset(root_dir, [data], args, mode='test')
         seq_loader = DataLoader(seq_dataset, batch_size=1024, shuffle=False)
-        ind = np.array([i[1] for i in seq_dataset.index_map if i[0] == 0], dtype=np.int)
+        ind = np.array([i[1] for i in seq_dataset.index_map if i[0] == 0], dtype=int)
 
         targets, preds = run_test(network, seq_loader, device, True)
         losses = np.mean((targets - preds) ** 2, axis=0)
@@ -315,8 +315,8 @@ def test_sequence(args):
         targets_seq.append(targets)
         losses_seq.append(losses)
 
-        pos_pred = recon_traj_with_preds(seq_dataset, preds)[:, :3]
-        pos_gt = seq_dataset.gt_pos[0][:, :3]
+        pos_pred = recon_traj_with_preds(seq_dataset, preds)[:, :2]
+        pos_gt = seq_dataset.gt_pos[0][:, :2]
 
         traj_lens.append(np.sum(np.linalg.norm(pos_gt[1:] - pos_gt[:-1], axis=1)))
         ate, rte = compute_ate_rte(pos_pred, pos_gt, pred_per_min)
@@ -356,7 +356,7 @@ def test_sequence(args):
 
         if args.out_dir is not None and osp.isdir(args.out_dir):
             np.save(osp.join(args.out_dir, data + '_gsn.npy'),
-                    np.concatenate([pos_pred[:, :3], pos_gt[:, :3]], axis=1))
+                    np.concatenate([pos_pred[:, :2], pos_gt[:, :2]], axis=1))
             plt.savefig(osp.join(args.out_dir, data + '_gsn.png'))
 
         plt.close('all')
@@ -391,20 +391,20 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_list', type=str,default = "/Users/can/ronin/lists/temp_train.txt")
+    parser.add_argument('--train_list', type=str,default = '/home/yuhneg/project/folder—can/ronin/lists/train.txt')
     parser.add_argument('--val_list', type=str, default=None)
-    parser.add_argument('--test_list', type=str, default=None)
+    parser.add_argument('--test_list', type=str, default='/home/yuhneg/project/folder—can/ronin/lists/test.txt')
     parser.add_argument('--test_path', type=str, default=None)
-    parser.add_argument('--root_dir', type=str, default='/Users/can/ronin/data/Euroc', help='/Users/can/ronin/data/Euroc')
+    parser.add_argument('--root_dir', type=str, default="/home/yuhneg/project/folder—can/denoise-imu-gyro/data", help='Path to data directory')
     parser.add_argument('--cache_path', type=str, default=None, help='Path to cache folder to store processed data')
-    parser.add_argument('--dataset', type=str, default='euroc', choices=['ronin', 'ridi','euroc'])
+    parser.add_argument('--dataset', type=str, default='euroc', choices=['euroc','ronin', 'ridi'])
     parser.add_argument('--max_ori_error', type=float, default=20.0)
     parser.add_argument('--step_size', type=int, default=10)
     parser.add_argument('--window_size', type=int, default=200)
-    parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'])
+    parser.add_argument('--mode', type=str, default='test', choices=['train', 'test'])
     parser.add_argument('--lr', type=float, default=1e-04)
     parser.add_argument('--batch_size', type=int, default=128)
-    parser.add_argument('--epochs', type=int, default=200)
+    parser.add_argument('--epochs', type=int, default=10000)
     parser.add_argument('--arch', type=str, default='resnet18')
     parser.add_argument('--cpu', action='store_true')
     parser.add_argument('--run_ekf', action='store_true')
@@ -412,8 +412,8 @@ if __name__ == '__main__':
     parser.add_argument('--show_plot', action='store_true')
 
     parser.add_argument('--continue_from', type=str, default=None)
-    parser.add_argument('--out_dir', type=str, default= '/Users/can/ronin/result')
-    parser.add_argument('--model_path', type=str, default=None)
+    parser.add_argument('--out_dir', type=str, default='/home/yuhneg/project/folder—can/ronin/result')
+    parser.add_argument('--model_path', type=str, default='/home/yuhneg/project/folder—can/ronin/result/checkpoints/checkpoint_latest.pt')
     parser.add_argument('--feature_sigma', type=float, default=0.00001)
     parser.add_argument('--target_sigma', type=float, default=0.00001)
 
