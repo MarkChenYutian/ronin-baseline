@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 data/Euroc
-
+result/checkpoints
 
 
 
@@ -184,3 +184,20 @@ lists/temp_train.txt
 .gitignore
 .DS_Store
 result/logs/events.out.tfevents.1691554878.Cans-MacBook-Pro.local
+result/checkpoints/checkpoint_0.pt
+source/home/yuhneg/project/folder—can/ronin/result/checkpoints
+source/home/yuhneg/project/folder—can/ronin/result/checkpoints/checkpoint_0.pt
+result/logs/events.out.tfevents.1692483194.yuhneg
+result/logs/events.out.tfevents.1692484207.yuhneg
+result/logs/events.out.tfevents.1692483890.yuhneg
+source/home/yuhneg/project/folder—can/ronin/result/config.json
+source/home/yuhneg/project/folder—can/ronin/result/logs/events.out.tfevents.1692481908.yuhneg
+.gitignore
+result/config.json
+.gitignore
+result/config.json
+result/MH_02_easy_gsn.npy
+result/MH_04_difficult_gsn.npy
+result/V1_01_easy_gsn.npy
+result/V1_03_difficult_gsn.npy
+result/V2_02_medium_gsn.npy
