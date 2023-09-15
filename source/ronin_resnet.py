@@ -1,7 +1,7 @@
 import os
 import time
 from os import path as osp
-
+import pickle
 import numpy as np
 import torch
 import json
@@ -19,6 +19,7 @@ from model_resnet1d import *
 _input_channel, _output_channel = 6, 3
 _fc_config = {'fc_dim': 512, 'in_dim': 7, 'dropout': 0.5, 'trans_planes': 128}
 
+torch.cuda.empty_cache()
 
 def get_model(arch):
     if arch == 'resnet18':
@@ -83,6 +84,9 @@ def get_dataset(root_dir, data_list, args, **kwargs):
     elif args.dataset == 'euroc':
         from data_euroc import EurocSequence
         seq_type = EurocSequence
+    elif args.dataset == 'NavG':
+        from data_NavG import NavGSequence
+        seq_type = NavGSequence
     dataset = StridedSequenceDataset(
         seq_type, root_dir, data_list, args.cache_path, args.step_size, args.window_size,
         random_shift=random_shift, transform=transforms,
@@ -255,13 +259,20 @@ def recon_traj_with_preds(dataset, preds, seq_id=0, **kwargs):
     ts = dataset.ts[seq_id]
     ind = np.array([i[1] for i in dataset.index_map if i[0] == seq_id], dtype=int)
     dts = np.mean(ts[ind[1:]] - ts[ind[:-1]])
+
     pos = np.zeros([preds.shape[0] + 2, 3])
     pos[0] = dataset.gt_pos[seq_id][0, :3]
     pos[1:-1] = np.cumsum(preds[:, :3] * dts, axis=0) + pos[0]
     pos[-1] = pos[-2]
+
     ts_ext = np.concatenate([[ts[0] - 1e-06], ts[ind], [ts[-1] + 1e-06]], axis=0)
     pos = interp1d(ts_ext, pos, axis=0)(ts)
-    return pos
+
+    ts_vel = ts[ind]
+    
+    return pos, ts_vel
+
+
 
 
 def test_sequence(args):
@@ -303,7 +314,7 @@ def test_sequence(args):
     traj_lens = []
 
     pred_per_min = 200 * 60
-
+    vel_dic={}
     for data in test_data_list:
         seq_dataset = get_dataset(root_dir, [data], args, mode='test')
         seq_loader = DataLoader(seq_dataset, batch_size=1024, shuffle=False)
@@ -315,7 +326,8 @@ def test_sequence(args):
         targets_seq.append(targets)
         losses_seq.append(losses)
 
-        pos_pred = recon_traj_with_preds(seq_dataset, preds)[:, :2]
+        pos_p,ts_vel = recon_traj_with_preds(seq_dataset, preds)
+        pos_pred = pos_p[:, :2]
         pos_gt = seq_dataset.gt_pos[0][:, :2]
 
         traj_lens.append(np.sum(np.linalg.norm(pos_gt[1:] - pos_gt[:-1], axis=1)))
@@ -325,7 +337,12 @@ def test_sequence(args):
         pos_cum_error = np.linalg.norm(pos_pred - pos_gt, axis=1)
 
         print('Sequence {}, loss {} / {}, ate {:.6f}, rte {:.6f}'.format(data, losses, np.mean(losses), ate, rte))
-
+        
+        vel_dic[data] = {
+                'ts':ts_vel,
+                'vel' :preds
+            }
+        
         # Plot figures
         kp = preds.shape[1]
         if kp == 2:
@@ -361,6 +378,11 @@ def test_sequence(args):
 
         plt.close('all')
 
+    print(vel_dic)
+    filename_correction = 'result_navg_resnet50_1000/vel_dic_1000.pkl'
+    with open(filename_correction, 'wb') as file:
+        pickle.dump(vel_dic,file)
+    
     losses_seq = np.stack(losses_seq, axis=0)
     losses_avg = np.mean(losses_seq, axis=1)
     # Export a csv file
@@ -391,29 +413,29 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_list', type=str,default = '/home/yuhneg/project/folder—can/ronin/lists/train.txt')
+    parser.add_argument('--train_list', type=str,default = '/home/yuhneg/project/folder_can/ronin/lists/navg_train_list.txt')
     parser.add_argument('--val_list', type=str, default=None)
-    parser.add_argument('--test_list', type=str, default='/home/yuhneg/project/folder—can/ronin/lists/test.txt')
+    parser.add_argument('--test_list', type=str, default='/home/yuhneg/project/folder_can/ronin/lists/navg_test_list.txt')
     parser.add_argument('--test_path', type=str, default=None)
-    parser.add_argument('--root_dir', type=str, default="/home/yuhneg/project/folder—can/denoise-imu-gyro/data", help='Path to data directory')
+    parser.add_argument('--root_dir', type=str, default="/home/yuhneg/data/NavG/", help='Path to data directory')
     parser.add_argument('--cache_path', type=str, default=None, help='Path to cache folder to store processed data')
-    parser.add_argument('--dataset', type=str, default='euroc', choices=['euroc','ronin', 'ridi'])
+    parser.add_argument('--dataset', type=str, default='NavG', choices=['euroc','ronin', 'ridi','NavG'])
     parser.add_argument('--max_ori_error', type=float, default=20.0)
     parser.add_argument('--step_size', type=int, default=10)
-    parser.add_argument('--window_size', type=int, default=200)
+    parser.add_argument('--window_size', type=int, default=1000)
     parser.add_argument('--mode', type=str, default='test', choices=['train', 'test'])
     parser.add_argument('--lr', type=float, default=1e-04)
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--epochs', type=int, default=10000)
-    parser.add_argument('--arch', type=str, default='resnet18')
+    parser.add_argument('--arch', type=str, default='resnet50')
     parser.add_argument('--cpu', action='store_true')
     parser.add_argument('--run_ekf', action='store_true')
     parser.add_argument('--fast_test', action='store_true')
     parser.add_argument('--show_plot', action='store_true')
 
     parser.add_argument('--continue_from', type=str, default=None)
-    parser.add_argument('--out_dir', type=str, default='/home/yuhneg/project/folder—can/ronin/result')
-    parser.add_argument('--model_path', type=str, default='/home/yuhneg/project/folder—can/ronin/result/checkpoints/checkpoint_latest.pt')
+    parser.add_argument('--out_dir', type=str, default='/home/yuhneg/project/folder_can/ronin/result_navg_resnet50_1000')
+    parser.add_argument('--model_path', type=str, default='/home/yuhneg/project/folder_can/ronin/result_navg_resnet50_1000/checkpoints/checkpoint_latest.pt')
     parser.add_argument('--feature_sigma', type=float, default=0.00001)
     parser.add_argument('--target_sigma', type=float, default=0.00001)
 

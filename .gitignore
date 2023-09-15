@@ -4,7 +4,16 @@ __pycache__/
 *$py.class
 data/Euroc
 result/checkpoints
-
+result
+result_navg
+result_navg_lr-5
+result_navg_resnet50
+result_navg_resnet50_1000
+result_navg_resnet50_2000
+result_navg_win2000
+result_navg_win12000
+config.json
+.gitignore
 
 
 # C extensions
@@ -201,3 +210,7 @@ result/MH_04_difficult_gsn.npy
 result/V1_01_easy_gsn.npy
 result/V1_03_difficult_gsn.npy
 result/V2_02_medium_gsn.npy
+lists/navg_test_list.txt
+.gitignore
+lists/navg_train_list.txt
+result/config.json

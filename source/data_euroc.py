@@ -42,12 +42,6 @@ class EurocSequence(CompiledSequence):
         self.load_gt(path)
         self.interpotation()
 
-
-
-        
-        
-
-        
         ##elseif
         # gyro_glob = self.info["gyro"]
         # acce_glob = self.info["acc"]
