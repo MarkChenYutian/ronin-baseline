@@ -1,7 +1,7 @@
 import math
 
 import numpy as np
-import quaternion
+# import quaternion
 
 
 def adjust_angle_array(angles):

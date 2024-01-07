@@ -7,7 +7,7 @@ import torch
 import torch
 import pypose as pp
 import numpy as np
-import quaternion
+#import quaternion
 
 from data_utils import CompiledSequence
 
@@ -35,7 +35,8 @@ class EurocSequence(CompiledSequence):
             path = path[:-1]
 
         self.info['path'] = osp.split(path)[-1]
-        self.info['ori_source'] = 'game_rv'
+        # self.info['ori_source'] = 'game_rv'
+        self.info['ori_source'] = 'gyro_integration'
 
         
         self.load_imu(path)
@@ -55,8 +56,8 @@ class EurocSequence(CompiledSequence):
         gyro_glob = self.info['gyro']
         acce_glob = self.info['acc']
         
-        #gyro_glob = (ori * pp.SO3(np.concatenate([nz, self.info['gyro']], axis=1)).double()).translation().numpy()
-        #acce_glob = (ori * pp.SO3(np.concatenate([nz, self.info['acc']], axis=1)).double()).translation().numpy()
+        # gyro_glob = (ori * pp.SO3(np.concatenate([nz, self.info['gyro']], axis=1)).double()).translation().numpy()
+        # acce_glob = (ori * pp.SO3(np.concatenate([nz, self.info['acc']], axis=1)).double()).translation().numpy()
 
 
         gt_pos =  self.info["gt_translation"]

@@ -4,7 +4,7 @@ from os import path as osp
 
 import h5py
 import numpy as np
-import quaternion
+# import quaternion
 from scipy.ndimage import gaussian_filter1d
 from torch.utils.data import Dataset
 

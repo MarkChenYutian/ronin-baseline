@@ -4,7 +4,7 @@ import random
 import numpy as np
 import json
 import math
-import quaternion
+# import quaternion
 import os
 import warnings
 from os import path as osp

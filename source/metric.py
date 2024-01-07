@@ -15,7 +15,9 @@ def compute_absolute_trajectory_error(est, gt):
         Absolution trajectory error, which is the Root Mean Squared Error between
         two trajectories.
     """
-    return np.sqrt(np.mean((est - gt) ** 2))
+  
+    return np.mean(np.linalg.norm((est-gt),axis=1))
+    #return np.sqrt(np.mean((est - gt) ** 2))
 
 
 def compute_relative_trajectory_error(est, gt, delta, max_delta=-1):
@@ -35,14 +37,18 @@ def compute_relative_trajectory_error(est, gt, delta, max_delta=-1):
     """
     if max_delta == -1:
         max_delta = est.shape[0]
+   
     deltas = np.array([delta]) if delta > 0 else np.arange(1, min(est.shape[0], max_delta))
     rtes = np.zeros(deltas.shape[0])
     for i in range(deltas.shape[0]):
+        
         # For each delta, the RTE is computed as the RMSE of endpoint drifts from fixed windows
         # slided through the trajectory.
         err = est[deltas[i]:] + gt[:-deltas[i]] - est[:-deltas[i]] - gt[deltas[i]:]
-        rtes[i] = np.sqrt(np.mean(err ** 2))
-
+        #sampled_err = err[::200]
+        # np.sqrt((relative_outstate['pos_dist'][0, select_mask]**2).mean())
+        rtes[i] = np.sqrt(np.mean(np.linalg.norm(err,axis=1)**2))
+       
     # The average of RTE of all window sized is returned.
     return np.mean(rtes)
 
