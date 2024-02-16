@@ -214,3 +214,6 @@ lists/navg_test_list.txt
 .gitignore
 lists/navg_train_list.txt
 result/config.json
+
+# Model Checkpoints
+**/*.pt
