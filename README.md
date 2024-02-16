@@ -1,4 +1,6 @@
-# RoNIN: Robust Neural Inertial Navigation in the Wild
+# RoNIN: Robust Neural Inertial Navigation in the Wild (Modified)
+
+> Support to KITTI dataset and EuRoC dataset are added for the baseline evaluation in the paper AirIMU 
 
 **Paper**: [ICRA 2020](https://ieeexplore.ieee.org/abstract/document/9196860), [arXiv](https://arxiv.org/abs/1905.12853)  
 **Website**: http://ronin.cs.sfu.ca/  
