@@ -80,6 +80,9 @@ def get_dataset(root_dir, data_list, args, **kwargs):
     elif args.dataset == 'SubT':
         from data_subt import SubTSequence
         seq_type = SubTSequence
+    elif args.dataset == 'KITTI':
+        from data_kitti import KITTISequence
+        seq_type = KITTISequence
     dataset = StridedSequenceDataset(
         seq_type, root_dir, data_list, args.cache_path, args.step_size, args.window_size,
         random_shift=random_shift, transform=transforms,
@@ -204,13 +207,13 @@ def train(args, **kwargs):
                 if avg_loss < best_val_loss:
                     best_val_loss = avg_loss
                     if args.out_dir and osp.isdir(args.out_dir):
-                        model_path = osp.join(args.out_dir, 'checkpoints', 'checkpoint_%d.pt' % epoch)
+                        model_path = osp.join(args.out_dir, 'checkpoints', 'best_model.pt' % epoch)
                         torch.save({'model_state_dict': network.state_dict(),
                                     'epoch': epoch,
                                     'optimizer_state_dict': optimizer.state_dict()}, model_path)
                         print('Model saved to ', model_path)
             else:
-                if args.out_dir is not None and osp.isdir(args.out_dir):
+                if args.out_dir is not None and osp.isdir(args.out_dir) and epoch % 5 == 0:
                     model_path = osp.join(args.out_dir, 'checkpoints', 'checkpoint_%d.pt' % epoch)
                     torch.save({'model_state_dict': network.state_dict(),
                                 'epoch': epoch,
@@ -262,8 +265,6 @@ def recon_traj_with_preds(dataset, preds, seq_id=0, **kwargs):
     return pos, ts_vel,vel
 
 
-
-
 def test_sequence(args):
     if args.test_path is not None:
         if args.test_path[-1] == '/':
@@ -302,8 +303,7 @@ def test_sequence(args):
     preds_seq, targets_seq, losses_seq, ate_all, rte_all = [], [], [], [], []
     traj_lens = []
 
-    pred_per_min = 200 * 60
-    pred_per_sec = 200
+    pred_per_sec = 10
     vel_dic={}
     for data in test_data_list:
         seq_dataset = get_dataset(root_dir, [data], args, mode='test')
@@ -367,7 +367,7 @@ def test_sequence(args):
 
         if args.out_dir is not None and osp.isdir(args.out_dir):
             np.save(osp.join(args.out_dir, data + '_gsn.npy'),
-                    np.concatenate([pos_pred[:, :2], pos_gt[:, :2]], axis=1))
+                    np.concatenate([pos_pred[:, :2], pos_gt[:, :2], vel], axis=1))
             plt.savefig(osp.join(args.out_dir, data + '_gsn.png'))
 
         plt.close('all')
@@ -407,20 +407,20 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_list', type=str,default = '/home/canxu/project/ronin/lists/train.txt')
+    parser.add_argument('--train_list', type=str,default = './lists/train.txt')
     parser.add_argument('--val_list', type=str, default=None)
-    parser.add_argument('--test_list', type=str, default='/home/canxu/project/ronin/lists/test.txt')
+    parser.add_argument('--test_list', type=str, default='./lists/test.txt')
     parser.add_argument('--test_path', type=str, default=None)
-    parser.add_argument('--root_dir', type=str, default="/data2/datasets/canxu/Euroc", help='Path to data directory')
+    parser.add_argument('--root_dir', type=str, default="/data/yuhengq/KITTI_raw/", help='Path to data directory')
     parser.add_argument('--cache_path', type=str, default=None, help='Path to cache folder to store processed data')
-    parser.add_argument('--dataset', type=str, default='euroc', choices=['euroc','ronin', 'ridi','NavG','SubT'])
+    parser.add_argument('--dataset', type=str, default='KITTI', choices=['euroc','ronin', 'ridi','NavG','SubT', 'KITTI'])
     parser.add_argument('--max_ori_error', type=float, default=20.0)
-    parser.add_argument('--step_size', type=int, default=10)
-    parser.add_argument('--window_size', type=int, default=1000)
+    parser.add_argument('--step_size', type=int, default=25)
+    parser.add_argument('--window_size', type=int, default=50)
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'])
     parser.add_argument('--lr', type=float, default=1e-04)
-    parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--epochs', type=int, default=150)
+    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--arch', type=str, default='resnet50')
     parser.add_argument('--cpu', action='store_true')
     parser.add_argument('--run_ekf', action='store_true')
@@ -428,10 +428,10 @@ if __name__ == '__main__':
     parser.add_argument('--show_plot', action='store_true')
 
     parser.add_argument('--continue_from', type=str, default=None)
-    parser.add_argument('--out_dir', type=str, default='/data2/datasets/canxu/resnetronin/experiments/Euroc')
-    parser.add_argument('--model_path', type=str, default='/data2/datasets/canxu/resnetronin/experiments/Euroc/checkpoints/checkpoint_latest.pt')
-    parser.add_argument('--feature_sigma', type=float, default=0.00001)
-    parser.add_argument('--target_sigma', type=float, default=0.00001)
+    parser.add_argument('--out_dir', type=str, default='./experiments/')
+    parser.add_argument('--model_path', type=str, default='./experiments/checkpoints/checkpoint_latest.pt')
+    parser.add_argument('--feature_sigma', type=float, default=1)
+    parser.add_argument('--target_sigma', type=float, default=1)
 
     args = parser.parse_args()
 

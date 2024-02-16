@@ -47,7 +47,8 @@ def compute_relative_trajectory_error(est, gt, delta, max_delta=-1):
         err = est[deltas[i]:] + gt[:-deltas[i]] - est[:-deltas[i]] - gt[deltas[i]:]
         #sampled_err = err[::200]
         # np.sqrt((relative_outstate['pos_dist'][0, select_mask]**2).mean())
-        rtes[i] = np.sqrt(np.mean(np.linalg.norm(err,axis=1)**2))
+        # rtes[i] = np.sqrt(np.mean(np.linalg.norm(err,axis=1)**2))
+        rtes[i] = np.mean(np.linalg.norm(err, axis=1))
        
     # The average of RTE of all window sized is returned.
     return np.mean(rtes)
